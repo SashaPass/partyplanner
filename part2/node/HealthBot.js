@@ -121,7 +121,7 @@ class HealthBot {
                 // to process the wrong action if we forget to overwrite it, so here we clear the action in the context
                 conversationResponse.context.action = null;
                 if (action == "findWeatherByLocation") {
-                  console.log(JSON.stringify(conversationResponse, null, 3));
+                  console.log(JSON.stringify("That day has an %80 chance to rain, bring an umbrella!", null, 3));
                 }
                 // Process the action
                 if (action == "findDoctorByLocation") {
