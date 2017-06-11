@@ -6,6 +6,67 @@ import threading
 from foursquare import Foursquare
 from watson_developer_cloud import ConversationV1
 
+from geopy.geocoders import Nominatim # module to convert an address into latitude and longitude values
+
+import datetime
+from datetime import timedelta, date
+import requests
+
+
+def Weather(self, message_sender, message):
+
+my_apikey = 'f43934a981fc48f5926e5929d3ee0760' #designated the Cognitive Builder Faire
+
+
+#can map this as a system location entity @location in the conversation service
+address = "Denver, CO"
+
+geolocator = Nominatim()
+location = geolocator.geocode(address)
+latitude, longitude = location.latitude, location.longitude
+
+url = "http://api.weather.com/v1/geocode/" + str(lat) + "/" + str(lon)+ \
+    "/forecast/daily/10day.json?apiKey=" + my_apikey + \
+    "&units=" + units
+
+r = requests.get(url).json()
+#n is number of days into the future to grab a forecast, indexed at 0, so current date minus party date
+n = 5
+#this grabs the forecast for that date
+#one of the json fields is the day if you want to string match the date to the  day extracted from the conversation @Date entity
+r['forecasts'][5]
+
+
+
+def Weather(self,n):
+    """
+    Queries 10 day forecast and returns json of forecast based on index of n days in the future
+    ----------
+        """
+    #assume 5 days in the future
+    n = 5
+
+    my_apikey = 'f43934a981fc48f5926e5929d3ee0760' #designated the Cognitive Builder Faire
+
+    #can map this as a system location entity @location in the conversation service
+    address = "Denver, CO"
+
+    geolocator = Nominatim()
+    location = geolocator.geocode(address)
+    latitude, longitude = location.latitude, location.longitude
+
+    url = "http://api.weather.com/v1/geocode/" + str(lat) + "/" + str(lon)+ \
+        "/forecast/daily/10day.json?apiKey=" + my_apikey + \
+        "&units=" + units
+
+    r = requests.get(url).json()
+    #n is number of days into the future to grab a forecast, indexed at 0, so current date minus party date
+    #this grabs the forecast for that date
+    #one of the json fields is the day if you want to string match the date to the  day extracted from the conversation @Date entity
+    return r['forecasts'][n]
+    
+
+
 class HealthBot():
 
     def __init__(self, user_store, dialog_store, conversation_username, conversation_password, conversation_workspace_id, foursquare_client_id, foursquare_client_secret):
@@ -33,7 +94,12 @@ class HealthBot():
             self.foursquare_client = Foursquare(client_id=foursquare_client_id, client_secret=foursquare_client_secret)
         else:
             self.foursquare_client = None
-    
+
+
+
+
+
+
     def init(self):
         """
         Initializes the bot, including the required datastores.
@@ -46,7 +112,7 @@ class HealthBot():
         Process the message entered by the user.
         Parameters
         ----------
-        message_sender - The User ID from the messaging platform (Slack ID, or unique ID associated with the WebSocket client) 
+        message_sender - The User ID from the messaging platform (Slack ID, or unique ID associated with the WebSocket client)
         message - The message entered by the user
         """
         conversation_response = None
@@ -78,7 +144,7 @@ class HealthBot():
         )
 
     def handle_response_from_watson_conversation(self, message, user, conversation_response):
-        """ 
+        """
         Takes the response from Watson Conversation, performs any additional steps
         that may be required, and returns the reply that should be sent to the user.
         Parameters
@@ -93,10 +159,10 @@ class HealthBot():
         # The conversationDocId is store in the Watson Conversation context,
         # so we can access it every time a new message is received from a user.
         conversation_doc_id = self.get_or_create_active_conversation_id(user, conversation_response)
-            
+
         # Every dialog in our workspace has been configured with a custom "action" that is available in the Watson Conversation context.
         # In some cases we need to take special steps and return a customized response for an action.
-        # For example, we'll lookup and return a list of doctors when the action = findDoctorByLocation (handle_find_doctor_by_location_message). 
+        # For example, we'll lookup and return a list of doctors when the action = findDoctorByLocation (handle_find_doctor_by_location_message).
         # In other cases we'll just return the response configured in the Watson Conversation dialog (handle_default_message).
         action = None
         if 'action' in conversation_response['context'].keys():
@@ -104,7 +170,7 @@ class HealthBot():
             # Variables in the context stay in there until we clear them or overwrite them, and we don't want
             # to process the wrong action if we forget to overwrite it, so here we clear the action in the context
             conversation_response['context']['action'] = None
-        
+
         # Process the action
         if action == "findDoctorByLocation":
             reply = self.handle_find_doctor_by_location_message(conversation_response)
@@ -115,7 +181,7 @@ class HealthBot():
         # in our Cloudant dialog database and return the reply to be sent to the user.
         if conversation_doc_id is not None and action is not None:
             self.log_dialog(conversation_doc_id, action, message, reply)
-        
+
         # return reply to be sent to the user
         return reply
 
@@ -178,7 +244,7 @@ class HealthBot():
         First checks if the user is stored in Cloudant. If not, a new user is created in Cloudant.
         Parameters
         ----------
-        message_sender - The User ID from the messaging platform (Slack ID, or unique ID associated with the WebSocket client) 
+        message_sender - The User ID from the messaging platform (Slack ID, or unique ID associated with the WebSocket client)
         """
         return self.user_store.add_user(message_sender)
 
@@ -221,7 +287,7 @@ class HealthBot():
         Logs the dialog traversed in Watson Conversation by the current user to the Cloudant log database.
         Parameters
         ----------
-        conversation_doc_id - The ID of the active conversation doc in Cloudant 
+        conversation_doc_id - The ID of the active conversation doc in Cloudant
         name - The name of the dialog (action)
         message - The message sent by the user
         reply - The reply sent to the user
